@@ -92,7 +92,7 @@ class StatisticsRepository {
     const current = new Date(currentDate);
     const yesterday = new Date(current);
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = yesterday.toISOString().split("T")[0];
 
     let newStreak = stats.current_streak;
 

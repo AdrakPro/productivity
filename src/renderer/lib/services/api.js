@@ -1,5 +1,5 @@
 const isElectron = () => {
-  return typeof window !== 'undefined' && window.api !== undefined;
+  return typeof window !== "undefined" && window.api !== undefined;
 };
 
 const mockApi = {
@@ -15,13 +15,22 @@ const mockApi = {
     archiveByDate: async () => 0,
   },
   subtasks: {
-    create: async (todoId, title) => ({ id: Date.now(), todo_id: todoId, title, is_completed: false }),
+    create: async (todoId, title) => ({
+      id: Date.now(),
+      todo_id: todoId,
+      title,
+      is_completed: false,
+    }),
     update: async (id, updates) => ({ id, ...updates }),
     delete: async () => true,
     reorder: async () => [],
   },
   statistics: {
-    get: async () => ({ total_completed: 0, current_streak: 0, longest_streak: 0 }),
+    get: async () => ({
+      total_completed: 0,
+      current_streak: 0,
+      longest_streak: 0,
+    }),
     update: async (data) => data,
   },
   streaks: {
@@ -39,7 +48,7 @@ const mockApi = {
   app: {
     getAutoLaunch: async () => false,
     setAutoLaunch: async () => true,
-    getVersion: async () => '1.0.0',
+    getVersion: async () => "1.0.0",
   },
 };
 

@@ -8,6 +8,5 @@
     File Explorer
   </h3>
 
-  <div class="text-sm text-gray-500">
-  </div>
+  <div class="text-sm text-gray-500"></div>
 </div>

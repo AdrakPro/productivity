@@ -1,4 +1,4 @@
-const { app } = require('electron');
+const { app } = require("electron");
 
 /**
  * Setup auto-launch on system startup
@@ -7,7 +7,7 @@ function setupAutoLaunch(enabled = false) {
   app.setLoginItemSettings({
     openAtLogin: enabled,
     openAsHidden: true,
-    path: app.getPath('exe'),
+    path: app.getPath("exe"),
   });
 }
 

@@ -41,7 +41,8 @@ class SettingsRepository {
   }
 
   set(key, value) {
-    const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
+    const stringValue =
+      typeof value === "string" ? value : JSON.stringify(value);
     this.statements.set.run({ key, value: stringValue });
   }
 

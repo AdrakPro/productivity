@@ -83,13 +83,18 @@ class SubtaskRepository {
       throw new Error(`Subtask with id ${id} not found`);
     }
 
-    const isCompleted = updates.is_completed !== undefined
-      ? (updates.is_completed ? 1 : 0)
-      : existing.is_completed;
+    const isCompleted =
+      updates.is_completed !== undefined
+        ? updates.is_completed
+          ? 1
+          : 0
+        : existing.is_completed;
 
     const completedAt = updates.is_completed
       ? new Date().toISOString()
-      : (updates.is_completed === false ? null : existing.completed_at);
+      : updates.is_completed === false
+        ? null
+        : existing.completed_at;
 
     this.statements.update.run({
       id,

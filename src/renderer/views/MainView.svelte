@@ -1,7 +1,7 @@
 <script>
   import TodoList from "$components/todos/TodoList.svelte";
   import DayNavigation from "$components/todos/DayNavigation.svelte";
-  import { viewMode, } from "$lib/stores/viewStore.js";
+  import { viewMode } from "$lib/stores/viewStore.js";
 </script>
 
 <div class="h-full flex flex-col">

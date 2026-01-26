@@ -1,7 +1,7 @@
-const Database = require('better-sqlite3');
-const path = require('path');
-const { app } = require('electron');
-const fs = require('fs');
+const Database = require("better-sqlite3");
+const path = require("path");
+const { app } = require("electron");
+const fs = require("fs");
 
 let db = null;
 
@@ -9,14 +9,14 @@ let db = null;
  * Get the database file path
  */
 function getDatabasePath() {
-  const userDataPath = app.getPath('userData');
+  const userDataPath = app.getPath("userData");
 
   // Ensure the directory exists
   if (!fs.existsSync(userDataPath)) {
     fs.mkdirSync(userDataPath, { recursive: true });
   }
 
-  return path.join(userDataPath, 'todo-productivity.db');
+  return path.join(userDataPath, "todo-productivity.db");
 }
 
 /**
@@ -28,23 +28,23 @@ function initializeDatabase() {
   }
 
   const dbPath = getDatabasePath();
-  console.log('Database path:', dbPath);
+  console.log("Database path:", dbPath);
 
   try {
     db = new Database(dbPath, {
-      verbose: process.env.NODE_ENV === 'development' ? console.log : null,
+      verbose: process.env.NODE_ENV === "development" ? console.log : null,
     });
 
     // Enable WAL mode for better performance
-    db.pragma('journal_mode = WAL');
+    db.pragma("journal_mode = WAL");
 
     // Enable foreign keys
-    db.pragma('foreign_keys = ON');
+    db.pragma("foreign_keys = ON");
 
-    console.log('Database initialized successfully');
+    console.log("Database initialized successfully");
     return db;
   } catch (error) {
-    console.error('Failed to initialize database:', error);
+    console.error("Failed to initialize database:", error);
     throw error;
   }
 }
@@ -54,7 +54,9 @@ function initializeDatabase() {
  */
 function getDatabase() {
   if (!db) {
-    throw new Error('Database not initialized. Call initializeDatabase() first.');
+    throw new Error(
+      "Database not initialized. Call initializeDatabase() first.",
+    );
   }
   return db;
 }
@@ -64,7 +66,7 @@ function getDatabase() {
  */
 function closeDatabase() {
   if (db) {
-    console.log('Closing database connection...');
+    console.log("Closing database connection...");
     db.close();
     db = null;
   }

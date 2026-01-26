@@ -133,8 +133,18 @@ class TodoRepository {
       title: updates.title ?? existing.title,
       description: updates.description ?? existing.description,
       due_date: updates.due_date ?? existing.due_date,
-      is_global: updates.is_global !== undefined ? (updates.is_global ? 1 : 0) : existing.is_global,
-      is_completed: updates.is_completed !== undefined ? (updates.is_completed ? 1 : 0) : existing.is_completed,
+      is_global:
+        updates.is_global !== undefined
+          ? updates.is_global
+            ? 1
+            : 0
+          : existing.is_global,
+      is_completed:
+        updates.is_completed !== undefined
+          ? updates.is_completed
+            ? 1
+            : 0
+          : existing.is_completed,
       completed_at: updates.completed_at ?? existing.completed_at,
     });
 

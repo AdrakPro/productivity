@@ -2,7 +2,7 @@
  * Run all database migrations
  */
 function runMigrations(db) {
-  console.log('Running database migrations...');
+  console.log("Running database migrations...");
 
   // Create migrations table if it doesn't exist
   db.exec(`
@@ -15,7 +15,7 @@ function runMigrations(db) {
 
   const migrations = [
     {
-      name: '001_create_todos_table',
+      name: "001_create_todos_table",
       sql: `
         CREATE TABLE IF NOT EXISTS todos (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,7 +36,7 @@ function runMigrations(db) {
       `,
     },
     {
-      name: '002_create_subtasks_table',
+      name: "002_create_subtasks_table",
       sql: `
         CREATE TABLE IF NOT EXISTS subtasks (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,7 +53,7 @@ function runMigrations(db) {
       `,
     },
     {
-      name: '003_create_streaks_table',
+      name: "003_create_streaks_table",
       sql: `
         CREATE TABLE IF NOT EXISTS streaks (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,7 +66,7 @@ function runMigrations(db) {
       `,
     },
     {
-      name: '004_create_statistics_table',
+      name: "004_create_statistics_table",
       sql: `
         CREATE TABLE IF NOT EXISTS statistics (
           id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -81,7 +81,7 @@ function runMigrations(db) {
       `,
     },
     {
-      name: '005_create_settings_table',
+      name: "005_create_settings_table",
       sql: `
         CREATE TABLE IF NOT EXISTS settings (
           key TEXT PRIMARY KEY,
@@ -93,7 +93,7 @@ function runMigrations(db) {
 
   // Check which migrations have been executed
   const executedMigrations = db
-    .prepare('SELECT name FROM migrations')
+    .prepare("SELECT name FROM migrations")
     .all()
     .map((row) => row.name);
 
@@ -106,7 +106,9 @@ function runMigrations(db) {
         db.exec(migration.sql);
 
         // Record the migration
-        db.prepare('INSERT INTO migrations (name) VALUES (?)').run(migration.name);
+        db.prepare("INSERT INTO migrations (name) VALUES (?)").run(
+          migration.name,
+        );
 
         console.log(`Migration ${migration.name} completed successfully`);
       } catch (error) {
@@ -116,7 +118,7 @@ function runMigrations(db) {
     }
   }
 
-  console.log('All migrations completed');
+  console.log("All migrations completed");
 }
 
 module.exports = {
