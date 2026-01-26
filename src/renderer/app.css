@@ -4,11 +4,6 @@
 
 /* Custom scrollbar for dark theme */
 @layer base {
-  :root,
-  .dark {
-    color-scheme: dark;
-  }
-
   * {
     scrollbar-width: thin;
     scrollbar-color: #3700b3 #1e1e1e;
@@ -32,15 +27,6 @@
     background-color: #bb86fc;
   }
 
-  html {
-    @apply bg-background text-white;
-    font-family: "Inter", system-ui, sans-serif;
-  }
-
-  body {
-    @apply bg-background;
-  }
-
   /* Prevent text selection on UI elements */
   button,
   .no-select {
@@ -51,6 +37,56 @@
   *:focus-visible {
     outline: 2px solid #bb86fc;
     outline-offset: 2px;
+  }
+
+  /* Custom checkbox styling */
+  input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #6b7280;
+    border-radius: 0.25rem;
+    background-color: #2d2d2d;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s ease-in-out;
+  }
+
+  input[type="checkbox"]:checked {
+    background-color: #bb86fc;
+    border-color: #bb86fc;
+  }
+
+  input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 4px;
+    height: 8px;
+    border: solid #000;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  input[type="checkbox"]:hover {
+    border-color: #bb86fc;
+  }
+
+  input[type="checkbox"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.3);
+  }
+
+  /* Date input styling */
+  input[type="date"] {
+    color-scheme: dark;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
   }
 }
 

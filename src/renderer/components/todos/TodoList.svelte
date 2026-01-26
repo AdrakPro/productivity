@@ -1,18 +1,22 @@
 <script>
-  import { CheckCircle2, Plus } from "lucide-svelte";
-  import { addTodo, filteredTodos, pendingCount, } from "$lib/stores/todoStore.js";
-  import { isPastDate, selectedDate, viewMode } from "$lib/stores/viewStore.js";
+  import { Plus, CheckCircle2 } from "lucide-svelte";
+  import {
+    filteredTodos,
+    pendingCount,
+    addTodo,
+  } from "$lib/stores/todoStore.js";
+  import { viewMode, selectedDate, isPastDate } from "$lib/stores/viewStore.js";
   import TodoItem from "./TodoItem.svelte";
   import TodoForm from "./TodoForm.svelte";
 
   let showAddForm = false;
 
   function handleAddTodo(event) {
-    const { title, description } = event.detail;
+    const { title, description, deadline } = event.detail;
     addTodo({
       title,
       description,
-      due_date: $viewMode === "global" ? null : $selectedDate,
+      due_date: $viewMode === "global" ? deadline : $selectedDate,
       is_global: $viewMode === "global",
     });
     showAddForm = false;
@@ -28,6 +32,7 @@
 </script>
 
 <div class="flex-1 flex flex-col">
+  <!-- Add Todo Button (hide for past dates in daily view) -->
   {#if !($viewMode === "daily" && $isPastDate)}
     {#if showAddForm}
       <TodoForm on:submit="{handleAddTodo}" on:cancel="{cancelAdd}" />
@@ -42,6 +47,7 @@
     {/if}
   {/if}
 
+  <!-- Todo List -->
   <div class="flex-1 overflow-auto space-y-3">
     {#if $filteredTodos.length === 0}
       <div class="card text-center py-12">
@@ -60,10 +66,10 @@
     {/if}
   </div>
 
+  <!-- Status Footer -->
   {#if totalTasks > 0}
     <div class="mt-4 pt-4 border-t border-surface-lighter">
       {#if allDone}
-        <!-- All tasks completed -->
         <div class="flex items-center justify-center gap-2 text-secondary">
           <CheckCircle2 size="{20}" />
           <span class="font-medium"

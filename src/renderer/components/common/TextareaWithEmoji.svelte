@@ -6,6 +6,7 @@
   export let placeholder = "";
   export let rows = 2;
   export let textareaClass = "";
+  export let autoCapitalize = true;
 
   const dispatch = createEventDispatcher();
 
@@ -15,13 +16,11 @@
   function handleEmojiSelect(event) {
     const { emoji } = event.detail;
 
-    // Insert emoji at cursor position
     if (textareaElement) {
       const start = textareaElement.selectionStart || value.length;
       const end = textareaElement.selectionEnd || value.length;
       value = value.slice(0, start) + emoji + value.slice(end);
 
-      // Set cursor position after emoji
       setTimeout(() => {
         textareaElement.focus();
         textareaElement.setSelectionRange(
@@ -33,6 +32,10 @@
       value += emoji;
     }
 
+    if (autoCapitalize) {
+      value = capitalizeText(value);
+    }
+
     dispatch("input", { value });
   }
 
@@ -41,24 +44,48 @@
   }
 
   function handleInput() {
+    if (autoCapitalize) {
+      value = capitalizeText(value);
+    }
     dispatch("input", { value });
+  }
+
+  function capitalizeText(text) {
+    if (!text) return text;
+
+    let result = text.charAt(0).toUpperCase() + text.slice(1);
+
+    result = result.replace(
+      /([.!?]\s+)([a-z])/g,
+      (match, separator, letter) => {
+        return separator + letter.toUpperCase();
+      },
+    );
+
+    result = result.replace(/(\n\s*)([a-z])/g, (match, separator, letter) => {
+      return separator + letter.toUpperCase();
+    });
+
+    return result;
   }
 </script>
 
-<div class="space-y-2">
-  <textarea
-    class="input w-full resize-none {textareaClass}"
-    {placeholder}
-    {rows}
-    bind:value
-    bind:this="{textareaElement}"
-    on:keydown="{handleKeydown}"
-    on:input="{handleInput}"
-  ></textarea>
-  <div class="flex justify-end">
-    <EmojiPicker
-      bind:isOpen="{emojiPickerOpen}"
-      on:select="{handleEmojiSelect}"
-    />
+<div class="relative">
+  <div class="flex gap-2">
+    <textarea
+      class="input w-full resize-none {textareaClass}"
+      {placeholder}
+      {rows}
+      bind:value
+      bind:this="{textareaElement}"
+      on:keydown="{handleKeydown}"
+      on:input="{handleInput}"
+    ></textarea>
+    <div class="flex-shrink-0">
+      <EmojiPicker
+        bind:isOpen="{emojiPickerOpen}"
+        on:select="{handleEmojiSelect}"
+      />
+    </div>
   </div>
 </div>

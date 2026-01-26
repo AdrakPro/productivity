@@ -6,6 +6,7 @@
   export let placeholder = "";
   export let autofocus = false;
   export let inputClass = "";
+  export let autoCapitalize = true;
 
   const dispatch = createEventDispatcher();
 
@@ -15,13 +16,11 @@
   function handleEmojiSelect(event) {
     const { emoji } = event.detail;
 
-    // Insert emoji at cursor position
     if (inputElement) {
       const start = inputElement.selectionStart || value.length;
       const end = inputElement.selectionEnd || value.length;
       value = value.slice(0, start) + emoji + value.slice(end);
 
-      // Set cursor position after emoji
       setTimeout(() => {
         inputElement.focus();
         inputElement.setSelectionRange(
@@ -41,7 +40,28 @@
   }
 
   function handleInput() {
+    if (autoCapitalize) {
+      value = capitalizeText(value);
+    }
     dispatch("input", { value });
+  }
+
+  // Capitalize first letter and after sentence endings (. ! ?)
+  function capitalizeText(text) {
+    if (!text) return text;
+
+    // Capitalize first character
+    let result = text.charAt(0).toUpperCase() + text.slice(1);
+
+    // Capitalize after sentence endings (. ! ?) followed by space
+    result = result.replace(
+      /([.!?]\s+)([a-z])/g,
+      (match, separator, letter) => {
+        return separator + letter.toUpperCase();
+      },
+    );
+
+    return result;
   }
 </script>
 
