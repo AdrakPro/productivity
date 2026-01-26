@@ -1,6 +1,10 @@
 <script>
   import { ChevronDown, ChevronRight } from "lucide-svelte";
-  import { expandedFolders, openFile, toggleFolder, } from "$lib/stores/fileStore.js";
+  import {
+    expandedFolders,
+    openFile,
+    toggleFolder,
+  } from "$lib/stores/fileStore.js";
   import FileItem from "./FileItem.svelte";
 
   export let node;

@@ -1,5 +1,5 @@
 <script>
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import EmojiPicker from "./EmojiPicker.svelte";
 
   export let value = "";
@@ -12,6 +12,19 @@
 
   let inputElement;
   let emojiPickerOpen = false;
+
+  // Expose focus method
+  export function focus() {
+    inputElement?.focus?.();
+  }
+
+  onMount(() => {
+    if (autofocus) {
+      setTimeout(() => {
+        inputElement?.focus?.();
+      }, 50);
+    }
+  });
 
   function handleEmojiSelect(event) {
     const { emoji } = event.detail;
@@ -74,7 +87,6 @@
     bind:this="{inputElement}"
     on:keydown="{handleKeydown}"
     on:input="{handleInput}"
-    {autofocus}
   />
   <EmojiPicker
     bind:isOpen="{emojiPickerOpen}"

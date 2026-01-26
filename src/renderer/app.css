@@ -88,19 +88,28 @@
     filter: invert(1);
     cursor: pointer;
   }
+
+  /* Priority colors as CSS variables */
+  :root {
+    --priority-urgent: #ef4444;
+    --priority-high: #f97316;
+    --priority-medium: #eab308;
+    --priority-low: #3b82f6;
+    --priority-none: #6b7280;
+  }
 }
 
 @layer components {
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
   }
 
   .btn-primary {
-    @apply bg-primary text-on-primary hover:bg-primary-hover;
+    @apply bg-primary text-on-primary hover:bg-primary-hover hover:scale-[1.02] active:scale-[0.98];
   }
 
   .btn-secondary {
-    @apply bg-secondary text-on-secondary hover:bg-secondary-hover;
+    @apply bg-secondary text-on-secondary hover:bg-secondary-hover hover:scale-[1.02] active:scale-[0.98];
   }
 
   .btn-ghost {
@@ -108,12 +117,142 @@
   }
 
   .card {
-    @apply bg-surface-light rounded-lg p-4;
+    @apply bg-surface-light rounded-lg p-4 transition-all duration-200;
+  }
+
+  .card:hover {
+    @apply shadow-lg;
   }
 
   .input {
     @apply bg-surface-lighter border border-surface-lighter rounded-lg px-3 py-2
     text-on-surface placeholder-gray-500
-    focus:border-primary focus:outline-none;
+    focus:border-primary focus:outline-none
+    transition-all duration-200;
+  }
+
+  .input:focus {
+    @apply ring-2 ring-primary/30;
+  }
+}
+
+@layer utilities {
+  /* Animations */
+  .animate-fadeIn {
+    animation: fadeIn 0.2s ease-out forwards;
+  }
+
+  .animate-fadeOut {
+    animation: fadeOut 0.2s ease-out forwards;
+  }
+
+  .animate-slideDown {
+    animation: slideDown 0.2s ease-out forwards;
+  }
+
+  .animate-slideUp {
+    animation: slideUp 0.2s ease-out forwards;
+  }
+
+  .animate-scaleIn {
+    animation: scaleIn 0.2s ease-out forwards;
+  }
+
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .animate-bounce-subtle {
+    animation: bounceSubtle 0.5s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+      transform: translateX(-2px);
+    }
+    20%,
+    40%,
+    60%,
+    80% {
+      transform: translateX(2px);
+    }
+  }
+
+  @keyframes bounceSubtle {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  /* Transitions */
+  .transition-height {
+    transition: height 0.3s ease-out;
   }
 }

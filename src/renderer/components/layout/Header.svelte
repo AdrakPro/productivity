@@ -1,5 +1,12 @@
 <script>
-  import { Archive, BarChart3, Calendar, Globe, Home, Settings } from "lucide-svelte";
+  import {
+    Archive,
+    BarChart3,
+    Calendar,
+    Globe,
+    Home,
+    Settings,
+  } from "lucide-svelte";
   import { currentPage, viewMode } from "$lib/stores/viewStore.js";
 
   function navigateTo(page) {

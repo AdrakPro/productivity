@@ -1,21 +1,39 @@
 <script>
   import { onMount } from "svelte";
-  import { Folder, FolderOpen, Info, Power, Settings, X, } from "lucide-svelte";
-  import { loadSettings, setAutoLaunch, settings, } from "$lib/stores/settingsStore.js";
   import {
+    Settings,
+    Folder,
+    Power,
+    Info,
+    FolderOpen,
+    X,
+    Download,
+    Upload,
+    Keyboard,
+  } from "lucide-svelte";
+  import {
+    settings,
+    loadSettings,
+    setAutoLaunch,
+  } from "$lib/stores/settingsStore.js";
+  import {
+    workingDirectory,
+    selectWorkingDirectory,
     clearWorkingDirectory,
     loadWorkingDirectory,
-    selectWorkingDirectory,
-    workingDirectory,
   } from "$lib/stores/fileStore.js";
+  import { exportTodos, importTodos } from "$lib/stores/todoStore.js";
+  import ToggleSwitch from "$components/common/ToggleSwitch.svelte";
+
+  let fileInput;
 
   onMount(() => {
     loadSettings();
     loadWorkingDirectory();
   });
 
-  async function handleAutoLaunchToggle() {
-    await setAutoLaunch(!$settings.autoLaunch);
+  async function handleAutoLaunchChange(event) {
+    await setAutoLaunch(event.detail.checked);
   }
 
   async function handleSelectFolder() {
@@ -26,10 +44,20 @@
     await clearWorkingDirectory();
   }
 
-  function getFolderName(path) {
-    if (!path) return "";
-    const parts = path.split(/[/\\]/);
-    return parts[parts.length - 1] || path;
+  function handleExport() {
+    exportTodos();
+  }
+
+  function handleImportClick() {
+    fileInput?.click();
+  }
+
+  async function handleFileSelected(event) {
+    const file = event.target.files?.[0];
+    if (file) {
+      await importTodos(file);
+      event.target.value = "";
+    }
   }
 </script>
 
@@ -46,7 +74,7 @@
   <!-- Settings Sections -->
   <div class="space-y-6">
     <!-- Startup Section -->
-    <div class="card">
+    <div class="card animate-fadeIn">
       <h3
         class="text-sm font-medium text-gray-400 mb-4 flex items-center gap-2"
       >
@@ -61,22 +89,16 @@
             Automatically start the app when you log in
           </p>
         </div>
-        <button
-          class="relative w-12 h-6 rounded-full transition-colors {$settings.autoLaunch
-            ? 'bg-primary'
-            : 'bg-surface-lighter'}"
-          on:click="{handleAutoLaunchToggle}"
-        >
-          <span
-            class="absolute top-1 w-4 h-4 rounded-full bg-white transition-transform
-                   {$settings.autoLaunch ? 'translate-x-7' : 'translate-x-1'}"
-          ></span>
-        </button>
+
+        <ToggleSwitch
+          checked="{$settings.autoLaunch}"
+          on:change="{handleAutoLaunchChange}"
+        />
       </div>
     </div>
 
     <!-- File Explorer Section -->
-    <div class="card">
+    <div class="card animate-fadeIn" style="animation-delay: 50ms">
       <h3
         class="text-sm font-medium text-gray-400 mb-4 flex items-center gap-2"
       >
@@ -120,8 +142,107 @@
       </div>
     </div>
 
+    <!-- Data Management Section -->
+    <div class="card animate-fadeIn" style="animation-delay: 100ms">
+      <h3
+        class="text-sm font-medium text-gray-400 mb-4 flex items-center gap-2"
+      >
+        <Download size="{16}" />
+        Data Management
+      </h3>
+
+      <div class="space-y-4">
+        <div>
+          <p class="text-on-surface font-medium mb-2">Export & Import</p>
+          <p class="text-sm text-gray-500 mb-3">
+            Backup your tasks or restore from a previous backup
+          </p>
+
+          <div class="flex gap-3">
+            <button
+              class="btn btn-ghost flex items-center gap-2"
+              on:click="{handleExport}"
+            >
+              <Download size="{18}" />
+              Export Data
+            </button>
+
+            <button
+              class="btn btn-ghost flex items-center gap-2"
+              on:click="{handleImportClick}"
+            >
+              <Upload size="{18}" />
+              Import Data
+            </button>
+
+            <input
+              bind:this="{fileInput}"
+              type="file"
+              accept=".json"
+              class="hidden"
+              on:change="{handleFileSelected}"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Keyboard Shortcuts -->
+    <div class="card animate-fadeIn" style="animation-delay: 150ms">
+      <h3
+        class="text-sm font-medium text-gray-400 mb-4 flex items-center gap-2"
+      >
+        <Keyboard size="{16}" />
+        Keyboard Shortcuts
+      </h3>
+
+      <div class="space-y-2 text-sm">
+        <div class="flex items-center justify-between py-1">
+          <span class="text-gray-400">New task</span>
+          <div class="flex gap-1 items-center">
+            <kbd class="px-2 py-1 bg-surface-lighter rounded text-xs">N</kbd>
+            <span class="text-gray-600 text-xs">or</span>
+            <kbd class="px-2 py-1 bg-surface-lighter rounded text-xs">Ctrl</kbd>
+            <span class="text-gray-600 text-xs">+</span>
+            <kbd class="px-2 py-1 bg-surface-lighter rounded text-xs">N</kbd>
+          </div>
+        </div>
+        <div class="flex items-center justify-between py-1">
+          <span class="text-gray-400">Save task (when editing)</span>
+          <div class="flex gap-1 items-center">
+            <kbd class="px-2 py-1 bg-surface-lighter rounded text-xs">Ctrl</kbd>
+            <span class="text-gray-600 text-xs">+</span>
+            <kbd class="px-2 py-1 bg-surface-lighter rounded text-xs">Enter</kbd
+            >
+          </div>
+        </div>
+        <div class="flex items-center justify-between py-1">
+          <span class="text-gray-400">Go to today</span>
+          <div class="flex gap-1 items-center">
+            <kbd class="px-2 py-1 bg-surface-lighter rounded text-xs">T</kbd>
+            <span class="text-gray-600 text-xs">or</span>
+            <kbd class="px-2 py-1 bg-surface-lighter rounded text-xs">Ctrl</kbd>
+            <span class="text-gray-600 text-xs">+</span>
+            <kbd class="px-2 py-1 bg-surface-lighter rounded text-xs">B</kbd>
+          </div>
+        </div>
+        <div class="flex items-center justify-between py-1">
+          <span class="text-gray-400">Previous day</span>
+          <kbd class="px-2 py-1 bg-surface-lighter rounded text-xs">←</kbd>
+        </div>
+        <div class="flex items-center justify-between py-1">
+          <span class="text-gray-400">Next day</span>
+          <kbd class="px-2 py-1 bg-surface-lighter rounded text-xs">→</kbd>
+        </div>
+        <div class="flex items-center justify-between py-1">
+          <span class="text-gray-400">Cancel / Close dialog</span>
+          <kbd class="px-2 py-1 bg-surface-lighter rounded text-xs">Esc</kbd>
+        </div>
+      </div>
+    </div>
+
     <!-- About Section -->
-    <div class="card">
+    <div class="card animate-fadeIn" style="animation-delay: 200ms">
       <h3
         class="text-sm font-medium text-gray-400 mb-4 flex items-center gap-2"
       >
@@ -136,27 +257,7 @@
         </div>
         <div class="flex items-center justify-between">
           <span class="text-gray-400">Built with</span>
-          <span class="text-on-surface">Electron + Svelte</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Keyboard Shortcuts -->
-    <div class="card">
-      <h3 class="text-sm font-medium text-gray-400 mb-4">Keyboard Shortcuts</h3>
-
-      <div class="space-y-2 text-sm">
-        <div class="flex items-center justify-between">
-          <span class="text-gray-400">Previous day</span>
-          <kbd class="px-2 py-1 bg-surface-lighter rounded text-xs">←</kbd>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="text-gray-400">Next day</span>
-          <kbd class="px-2 py-1 bg-surface-lighter rounded text-xs">→</kbd>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="text-gray-400">Close dialog</span>
-          <kbd class="px-2 py-1 bg-surface-lighter rounded text-xs">Esc</kbd>
+          <span class="text-on-surface">Electron + Svelte + SQLite</span>
         </div>
       </div>
     </div>

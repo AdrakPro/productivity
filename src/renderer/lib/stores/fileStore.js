@@ -1,14 +1,50 @@
-import { get, writable } from "svelte/store";
+import { writable, get } from "svelte/store";
 import { filesApi } from "$lib/services/api.js";
 
+// File tree structure
 export const fileTree = writable(null);
+
+// Working directory path
 export const workingDirectory = writable(null);
+
+// Loading state
 export const isLoading = writable(false);
+
+// Error state
 export const error = writable(null);
 
+// Expanded folders (set of paths)
 export const expandedFolders = writable(new Set());
 
+// Load expanded folders from localStorage
+function loadExpandedFolders() {
+  try {
+    const saved = localStorage.getItem("expandedFolders");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        expandedFolders.set(new Set(parsed));
+      }
+    }
+  } catch (err) {
+    console.error("Failed to load expanded folders:", err);
+  }
+}
+
+// Save expanded folders to localStorage
+function saveExpandedFolders() {
+  try {
+    const folders = get(expandedFolders);
+    localStorage.setItem("expandedFolders", JSON.stringify([...folders]));
+  } catch (err) {
+    console.error("Failed to save expanded folders:", err);
+  }
+}
+
+// Load working directory from settings
 export async function loadWorkingDirectory() {
+  loadExpandedFolders();
+
   try {
     const dir = await filesApi.getWorkingDirectory();
     workingDirectory.set(dir);
@@ -21,6 +57,7 @@ export async function loadWorkingDirectory() {
   }
 }
 
+// Select a new working directory
 export async function selectWorkingDirectory() {
   isLoading.set(true);
   error.set(null);
@@ -29,6 +66,8 @@ export async function selectWorkingDirectory() {
     const dir = await filesApi.selectDirectory();
     if (dir) {
       workingDirectory.set(dir);
+      // Reset expanded folders for new directory
+      expandedFolders.set(new Set());
       await loadFileTree(dir);
     }
     return dir;
@@ -41,6 +80,7 @@ export async function selectWorkingDirectory() {
   }
 }
 
+// Load file tree for a directory
 export async function loadFileTree(dirPath) {
   if (!dirPath) return;
 
@@ -51,13 +91,17 @@ export async function loadFileTree(dirPath) {
     const tree = await filesApi.getTree(dirPath);
     fileTree.set(tree);
 
-    // Auto-expand root folder
+    // Auto-expand root folder if no saved state
     if (tree) {
-      expandedFolders.update((set) => {
-        const newSet = new Set(set);
-        newSet.add(tree.path);
-        return newSet;
-      });
+      const currentExpanded = get(expandedFolders);
+      if (currentExpanded.size === 0) {
+        expandedFolders.update((set) => {
+          const newSet = new Set(set);
+          newSet.add(tree.path);
+          return newSet;
+        });
+        saveExpandedFolders();
+      }
     }
   } catch (err) {
     console.error("Failed to load file tree:", err);
@@ -67,6 +111,7 @@ export async function loadFileTree(dirPath) {
   }
 }
 
+// Refresh file tree
 export async function refreshFileTree() {
   const dir = get(workingDirectory);
 
@@ -75,6 +120,7 @@ export async function refreshFileTree() {
   }
 }
 
+// Open file with system default application
 export async function openFile(filePath) {
   try {
     await filesApi.openFile(filePath);
@@ -84,6 +130,7 @@ export async function openFile(filePath) {
   }
 }
 
+// Toggle folder expansion
 export function toggleFolder(path) {
   expandedFolders.update((set) => {
     const newSet = new Set(set);
@@ -94,8 +141,12 @@ export function toggleFolder(path) {
     }
     return newSet;
   });
+
+  // Save to localStorage
+  saveExpandedFolders();
 }
 
+// Check if folder is expanded
 export function isFolderExpanded(path) {
   let expanded = false;
   const unsubscribe = expandedFolders.subscribe((set) => {
@@ -105,9 +156,11 @@ export function isFolderExpanded(path) {
   return expanded;
 }
 
+// Clear working directory
 export async function clearWorkingDirectory() {
   workingDirectory.set(null);
   fileTree.set(null);
   expandedFolders.set(new Set());
+  localStorage.removeItem("expandedFolders");
   await filesApi.setWorkingDirectory(null);
 }

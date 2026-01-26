@@ -1,4 +1,4 @@
-import { derived, get, writable } from "svelte/store";
+import { writable, derived, get } from "svelte/store";
 
 // Current page: 'main' | 'archive' | 'statistics' | 'settings'
 export const currentPage = writable("main");
@@ -7,8 +7,15 @@ export const currentPage = writable("main");
 export const viewMode = writable("daily");
 
 // Selected date for daily view (ISO string: YYYY-MM-DD)
-const today = new Date().toISOString().split("T")[0];
-export const selectedDate = writable(today);
+function getTodayISO() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export const selectedDate = writable(getTodayISO());
 
 // Helper to parse date without timezone issues
 function parseLocalDate(dateStr) {
@@ -49,36 +56,36 @@ export const selectedDateShort = derived(selectedDate, ($date) => {
 
 // Check if selected date is today
 export const isToday = derived(selectedDate, ($date) => {
-  return $date === formatDateToISO(new Date());
+  return $date === getTodayISO();
 });
 
 // Check if selected date is in the past
 export const isPastDate = derived(selectedDate, ($date) => {
-  const todayStr = formatDateToISO(new Date());
-  return $date < todayStr;
+  return $date < getTodayISO();
 });
 
 // Check if selected date is in the future
 export const isFutureDate = derived(selectedDate, ($date) => {
-  const todayStr = formatDateToISO(new Date());
-  return $date > todayStr;
+  return $date > getTodayISO();
 });
 
 // Navigation functions for daily view
 export function goToPreviousDay() {
-  const current = get(selectedDate);
-  const date = parseLocalDate(current);
-  date.setDate(date.getDate() - 1);
-  selectedDate.set(formatDateToISO(date));
+  selectedDate.update((current) => {
+    const date = parseLocalDate(current);
+    date.setDate(date.getDate() - 1);
+    return formatDateToISO(date);
+  });
 }
 
 export function goToNextDay() {
-  const current = get(selectedDate);
-  const date = parseLocalDate(current);
-  date.setDate(date.getDate() + 1);
-  selectedDate.set(formatDateToISO(date));
+  selectedDate.update((current) => {
+    const date = parseLocalDate(current);
+    date.setDate(date.getDate() + 1);
+    return formatDateToISO(date);
+  });
 }
 
 export function goToToday() {
-  selectedDate.set(formatDateToISO(new Date()));
+  selectedDate.set(getTodayISO());
 }

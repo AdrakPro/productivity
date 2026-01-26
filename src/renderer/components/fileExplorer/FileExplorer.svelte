@@ -1,6 +1,13 @@
 <script>
   import { onMount } from "svelte";
-  import { ChevronDown, Folder, FolderOpen, FolderPlus, RefreshCw, X, } from "lucide-svelte";
+  import {
+    ChevronDown,
+    Folder,
+    FolderOpen,
+    FolderPlus,
+    RefreshCw,
+    X,
+  } from "lucide-svelte";
   import {
     clearWorkingDirectory,
     expandedFolders,

@@ -1,7 +1,18 @@
 <script>
   import { onMount } from "svelte";
-  import { BarChart3, Calendar, CheckCircle2, Flame, TrendingUp, Trophy, } from "lucide-svelte";
-  import { loadStatistics, statistics, streakStatus, } from "$lib/stores/statisticsStore.js";
+  import {
+    BarChart3,
+    Calendar,
+    CheckCircle2,
+    Flame,
+    TrendingUp,
+    Trophy,
+  } from "lucide-svelte";
+  import {
+    loadStatistics,
+    statistics,
+    streakStatus,
+  } from "$lib/stores/statisticsStore.js";
   import { todos } from "$lib/stores/todoStore.js";
   import StreakCalendar from "$components/statistics/StreakCalendar.svelte";
   import StatsCard from "$components/statistics/StatsCard.svelte";

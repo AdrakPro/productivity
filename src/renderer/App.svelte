@@ -8,7 +8,11 @@
   import StatisticsView from "./views/StatisticsView.svelte";
   import SettingsView from "./views/SettingsView.svelte";
   import { currentPage } from "$lib/stores/viewStore.js";
-  import { archiveDailyTodos, archiveOverdueGlobalTodos, loadTodos, } from "$lib/stores/todoStore.js";
+  import {
+    archiveDailyTodos,
+    archiveOverdueGlobalTodos,
+    loadTodos,
+  } from "$lib/stores/todoStore.js";
   import { loadStatistics } from "$lib/stores/statisticsStore.js";
 
   let autoArchiveInterval = null;

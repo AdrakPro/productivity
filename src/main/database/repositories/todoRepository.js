@@ -20,13 +20,29 @@ class TodoRepository {
       getByDate: this.db.prepare(`
         SELECT * FROM todos 
         WHERE due_date = ? AND is_global = 0 AND is_archived = 0
-        ORDER BY created_at ASC
+        ORDER BY 
+          CASE priority 
+            WHEN 'urgent' THEN 0 
+            WHEN 'high' THEN 1 
+            WHEN 'medium' THEN 2 
+            WHEN 'low' THEN 3 
+            ELSE 4 
+          END,
+          created_at ASC
       `),
 
       getGlobal: this.db.prepare(`
         SELECT * FROM todos 
         WHERE is_global = 1 AND is_archived = 0
-        ORDER BY created_at ASC
+        ORDER BY 
+          CASE priority 
+            WHEN 'urgent' THEN 0 
+            WHEN 'high' THEN 1 
+            WHEN 'medium' THEN 2 
+            WHEN 'low' THEN 3 
+            ELSE 4 
+          END,
+          created_at ASC
       `),
 
       getArchived: this.db.prepare(`
@@ -36,8 +52,8 @@ class TodoRepository {
       `),
 
       create: this.db.prepare(`
-        INSERT INTO todos (title, description, due_date, is_global, created_at, updated_at)
-        VALUES (@title, @description, @due_date, @is_global, datetime('now'), datetime('now'))
+        INSERT INTO todos (title, description, due_date, is_global, priority, labels, created_at, updated_at)
+        VALUES (@title, @description, @due_date, @is_global, @priority, @labels, datetime('now'), datetime('now'))
       `),
 
       update: this.db.prepare(`
@@ -48,6 +64,8 @@ class TodoRepository {
             is_global = @is_global,
             is_completed = @is_completed,
             completed_at = @completed_at,
+            priority = @priority,
+            labels = @labels,
             updated_at = datetime('now')
         WHERE id = @id
       `),
@@ -72,43 +90,35 @@ class TodoRepository {
             updated_at = datetime('now')
         WHERE due_date = ? AND is_global = 0 AND is_archived = 0
       `),
+    };
+  }
 
-      markCompleted: this.db.prepare(`
-        UPDATE todos 
-        SET is_completed = 1,
-            completed_at = datetime('now'),
-            updated_at = datetime('now')
-        WHERE id = ?
-      `),
-
-      markIncomplete: this.db.prepare(`
-        UPDATE todos 
-        SET is_completed = 0,
-            completed_at = NULL,
-            updated_at = datetime('now')
-        WHERE id = ?
-      `),
+  _parseTodo(todo) {
+    if (!todo) return null;
+    return {
+      ...todo,
+      labels: todo.labels ? JSON.parse(todo.labels) : [],
     };
   }
 
   getAll() {
-    return this.statements.getAll.all();
+    return this.statements.getAll.all().map(this._parseTodo);
   }
 
   getById(id) {
-    return this.statements.getById.get(id);
+    return this._parseTodo(this.statements.getById.get(id));
   }
 
   getByDate(date) {
-    return this.statements.getByDate.all(date);
+    return this.statements.getByDate.all(date).map(this._parseTodo);
   }
 
   getGlobal() {
-    return this.statements.getGlobal.all();
+    return this.statements.getGlobal.all().map(this._parseTodo);
   }
 
   getArchived() {
-    return this.statements.getArchived.all();
+    return this.statements.getArchived.all().map(this._parseTodo);
   }
 
   create(todo) {
@@ -117,6 +127,8 @@ class TodoRepository {
       description: todo.description || null,
       due_date: todo.due_date || null,
       is_global: todo.is_global ? 1 : 0,
+      priority: todo.priority || "none",
+      labels: JSON.stringify(todo.labels || []),
     });
 
     return this.getById(result.lastInsertRowid);
@@ -146,6 +158,10 @@ class TodoRepository {
             : 0
           : existing.is_completed,
       completed_at: updates.completed_at ?? existing.completed_at,
+      priority: updates.priority ?? existing.priority,
+      labels: updates.labels
+        ? JSON.stringify(updates.labels)
+        : JSON.stringify(existing.labels),
     });
 
     return this.getById(id);
@@ -164,16 +180,6 @@ class TodoRepository {
   archiveByDate(date) {
     const result = this.statements.archiveByDate.run(date);
     return result.changes;
-  }
-
-  markCompleted(id) {
-    this.statements.markCompleted.run(id);
-    return this.getById(id);
-  }
-
-  markIncomplete(id) {
-    this.statements.markIncomplete.run(id);
-    return this.getById(id);
   }
 }
 
