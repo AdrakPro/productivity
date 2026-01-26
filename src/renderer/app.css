@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar for dark theme */
+@layer base {
+  :root,
+  .dark {
+    color-scheme: dark;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #3700b3 #1e1e1e;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #1e1e1e;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #3700b3;
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: #bb86fc;
+  }
+
+  html {
+    @apply bg-background text-white;
+    font-family: "Inter", system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-background;
+  }
+
+  /* Prevent text selection on UI elements */
+  button,
+  .no-select {
+    user-select: none;
+  }
+
+  /* Focus styles for accessibility */
+  *:focus-visible {
+    outline: 2px solid #bb86fc;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-on-primary hover:bg-primary-hover;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-on-secondary hover:bg-secondary-hover;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-on-surface hover:bg-surface-lighter;
+  }
+
+  .card {
+    @apply bg-surface-light rounded-lg p-4;
+  }
+
+  .input {
+    @apply bg-surface-lighter border border-surface-lighter rounded-lg px-3 py-2
+    text-on-surface placeholder-gray-500
+    focus:border-primary focus:outline-none;
+  }
+}
