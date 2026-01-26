@@ -3,14 +3,82 @@
   "version": "1.0.0",
   "description": "Minimalistic desktop productivity app",
   "main": "src/main/index.js",
+  "license": "MIT",
   "scripts": {
     "dev": "concurrently -k \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
     "dev:electron": "wait-on tcp:5173 && electron .",
-    "build": "vite build && electron-builder",
+    "build": "npm run build:vite && npm run build:electron",
     "build:vite": "vite build",
+    "build:electron": "electron-builder --linux",
+    "build:appimage": "electron-builder --linux AppImage",
+    "build:deb": "electron-builder --linux deb",
+    "build:rpm": "electron-builder --linux rpm",
+    "build:all": "electron-builder --linux AppImage deb rpm",
     "start": "electron .",
     "rebuild": "electron-rebuild -f -w better-sqlite3"
+  },
+  "build": {
+    "appId": "com.todoproductivity.app",
+    "productName": "Productivity",
+    "directories": {
+      "output": "dist-electron",
+      "buildResources": "resources"
+    },
+    "files": [
+      "src/main/**/*",
+      "dist/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/icons",
+        "to": "icons"
+      }
+    ],
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "resources/icons",
+      "category": "Office",
+      "maintainer": "Your Name <your.email@example.com>",
+      "vendor": "Your Name",
+      "synopsis": "A minimalistic todo productivity app",
+      "description": "A minimalistic desktop productivity app with daily/global tasks, subtasks, streaks, and statistics.",
+      "desktop": {
+        "Name": "Todo Productivity",
+        "Comment": "Minimalistic todo productivity app",
+        "Categories": "Office;ProjectManagement;Utility",
+        "Keywords": "todo;productivity;tasks;planner"
+      }
+    },
+    "appImage": {
+      "artifactName": "${productName}-${version}-${arch}.AppImage"
+    },
+    "deb": {
+      "artifactName": "${productName}-${version}-${arch}.deb",
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0"
+      ]
+    },
+    "rpm": {
+      "artifactName": "${productName}-${version}-${arch}.rpm"
+    }
   },
   "devDependencies": {
     "@electron/rebuild": "^3.6.0",
@@ -20,42 +88,16 @@
     "electron": "29.4.6",
     "electron-builder": "^24.13.3",
     "postcss": "^8.4.35",
-    "prettier": "^3.8.1",
-    "prettier-plugin-svelte": "^3.4.1",
     "svelte": "^4.2.12",
     "tailwindcss": "^3.4.1",
     "vite": "^5.1.6",
-    "wait-on": "^7.2.0"
+    "wait-on": "^7.2.0",
+    "prettier": "^3.8.1",
+    "prettier-plugin-svelte": "^3.4.1"
   },
   "dependencies": {
     "better-sqlite3": "9.4.3",
     "date-fns": "^3.3.1",
     "lucide-svelte": "^0.344.0"
-  },
-  "build": {
-    "appId": "com.productivity.todoapp",
-    "productName": "Todo Productivity",
-    "directories": {
-      "output": "dist-electron",
-      "buildResources": "resources"
-    },
-    "files": [
-      "src/main/**/*",
-      "dist/**/*"
-    ],
-    "extraMetadata": {
-      "main": "src/main/index.js"
-    },
-    "mac": {
-      "target": "dmg",
-      "category": "public.app-category.productivity"
-    },
-    "win": {
-      "target": "nsis"
-    },
-    "linux": {
-      "target": "AppImage",
-      "category": "Office"
-    }
   }
 }

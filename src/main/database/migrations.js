@@ -89,6 +89,13 @@ function runMigrations(db) {
         );
       `,
     },
+    {
+      name: "006_add_priority_and_labels_to_todos",
+      sql: `
+        ALTER TABLE todos ADD COLUMN priority TEXT DEFAULT 'none';
+        ALTER TABLE todos ADD COLUMN labels TEXT DEFAULT '[]';
+      `,
+    },
   ];
 
   // Check which migrations have been executed
@@ -112,8 +119,16 @@ function runMigrations(db) {
 
         console.log(`Migration ${migration.name} completed successfully`);
       } catch (error) {
-        console.error(`Migration ${migration.name} failed:`, error);
-        throw error;
+        // Handle "duplicate column" error gracefully for ALTER TABLE
+        if (error.message.includes("duplicate column")) {
+          console.log(`Column already exists, skipping: ${migration.name}`);
+          db.prepare("INSERT INTO migrations (name) VALUES (?)").run(
+            migration.name,
+          );
+        } else {
+          console.error(`Migration ${migration.name} failed:`, error);
+          throw error;
+        }
       }
     }
   }
