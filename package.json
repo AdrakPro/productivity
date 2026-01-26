@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Minimalistic desktop productivity app",
   "main": "src/main/index.js",
-  "type": "module",
   "scripts": {
     "dev": "concurrently -k \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
