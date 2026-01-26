@@ -1,10 +1,5 @@
 <script>
-  import {
-    currentPage,
-    goToNextDay,
-    goToPreviousDay,
-    viewMode,
-  } from "$lib/stores/viewStore.js";
+  import { currentPage, goToNextDay, goToPreviousDay, viewMode } from "$lib/stores/viewStore.js";
 
   function handleKeydown(event) {
     // Only handle if we're in daily view and on main page

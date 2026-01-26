@@ -1,17 +1,6 @@
 <script>
-  import {
-    Calendar,
-    CheckCircle2,
-    Circle,
-    Clock,
-    Globe,
-    X,
-  } from "lucide-svelte";
-  import {
-    closeTodoDetail,
-    isDetailDialogOpen,
-    selectedArchivedTodo,
-  } from "$lib/stores/archiveStore.js";
+  import { Calendar, CheckCircle2, Circle, Clock, Globe, X, } from "lucide-svelte";
+  import { closeTodoDetail, isDetailDialogOpen, selectedArchivedTodo, } from "$lib/stores/archiveStore.js";
   import { getTodoProgress } from "$lib/stores/todoStore.js";
 
   // Format date for display (DD.MM.YYYY)

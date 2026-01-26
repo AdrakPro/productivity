@@ -1,5 +1,5 @@
 <script>
-  import { Archive, BarChart3, Calendar, Globe, Home } from "lucide-svelte";
+  import { Archive, BarChart3, Calendar, Globe, Home, Settings } from "lucide-svelte";
   import { currentPage, viewMode } from "$lib/stores/viewStore.js";
 
   function navigateTo(page) {
@@ -62,7 +62,18 @@
       </button>
     </nav>
 
-    <!-- Right: Spacer for balance -->
-    <div class="flex-1"></div>
+    <!-- Right: Settings -->
+    <div class="flex-1 flex justify-end">
+      <button
+        class="btn btn-ghost flex items-center gap-2 px-3 py-2 {$currentPage ===
+        'settings'
+          ? 'bg-surface-lighter text-primary'
+          : ''}"
+        on:click="{() => navigateTo('settings')}"
+        title="Settings"
+      >
+        <Settings size="{20}" />
+      </button>
+    </div>
   </div>
 </header>

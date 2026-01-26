@@ -1,6 +1,6 @@
-import { writable, derived, get } from "svelte/store";
-import { viewMode, selectedDate } from "./viewStore.js";
-import { todosApi, subtasksApi } from "$lib/services/api.js";
+import { derived, get, writable } from "svelte/store";
+import { selectedDate, viewMode } from "./viewStore.js";
+import { subtasksApi, todosApi } from "$lib/services/api.js";
 
 // All todos from database (with subtasks embedded)
 export const todos = writable([]);

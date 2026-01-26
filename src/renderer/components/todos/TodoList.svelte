@@ -1,11 +1,7 @@
 <script>
-  import { Plus, CheckCircle2 } from "lucide-svelte";
-  import {
-    filteredTodos,
-    pendingCount,
-    addTodo,
-  } from "$lib/stores/todoStore.js";
-  import { viewMode, selectedDate, isPastDate } from "$lib/stores/viewStore.js";
+  import { CheckCircle2, Plus } from "lucide-svelte";
+  import { addTodo, filteredTodos, pendingCount, } from "$lib/stores/todoStore.js";
+  import { isPastDate, selectedDate, viewMode } from "$lib/stores/viewStore.js";
   import TodoItem from "./TodoItem.svelte";
   import TodoForm from "./TodoForm.svelte";
 

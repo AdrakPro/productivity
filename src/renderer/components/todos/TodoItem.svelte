@@ -1,24 +1,24 @@
 <script>
   import {
+    AlertCircle,
+    Calendar,
+    Check,
+    CheckCircle2,
     ChevronDown,
     ChevronRight,
+    Edit3,
     Plus,
     Trash2,
-    Edit3,
-    Check,
     X,
-    CheckCircle2,
-    Calendar,
-    AlertCircle,
   } from "lucide-svelte";
   import {
-    getTodoProgress,
-    updateTodo,
-    deleteTodo,
     addSubtask,
-    updateSubtask,
     deleteSubtask,
+    deleteTodo,
+    getTodoProgress,
     isTodoDone,
+    updateSubtask,
+    updateTodo,
   } from "$lib/stores/todoStore.js";
   import SubtaskItem from "./SubtaskItem.svelte";
   import TextInputWithEmoji from "$components/common/TextInputWithEmoji.svelte";

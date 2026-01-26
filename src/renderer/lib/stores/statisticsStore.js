@@ -1,4 +1,4 @@
-import { writable, derived } from "svelte/store";
+import { derived, writable } from "svelte/store";
 import { statisticsApi, streaksApi } from "$lib/services/api.js";
 
 export const statistics = writable({

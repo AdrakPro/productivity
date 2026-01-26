@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher } from "svelte";
-  import { Check, X, Calendar } from "lucide-svelte";
+  import { Calendar, Check, X } from "lucide-svelte";
   import TextInputWithEmoji from "$components/common/TextInputWithEmoji.svelte";
   import TextareaWithEmoji from "$components/common/TextareaWithEmoji.svelte";
   import { viewMode } from "$lib/stores/viewStore.js";
