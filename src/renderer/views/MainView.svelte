@@ -1,18 +1,13 @@
 <script>
   import TodoList from "$components/todos/TodoList.svelte";
   import DayNavigation from "$components/todos/DayNavigation.svelte";
-  import {
-    viewMode,
-    selectedDateFormatted,
-    isToday,
-    isPastDate,
-  } from "$lib/stores/viewStore.js";
+  import { viewMode } from "$lib/stores/viewStore.js";
 
   let todoListRef;
 
-  // Expose method for parent to trigger new task
+  // Expose method to parent
   export function triggerNewTask() {
-    todoListRef?.triggerNewTask?.();
+    todoListRef?.triggerNewTask();
   }
 </script>
 
@@ -23,9 +18,12 @@
       <DayNavigation />
     {:else}
       <h1 class="text-2xl font-bold text-on-surface">Global Tasks</h1>
+      <p class="text-gray-400 text-sm mt-1">
+        Tasks with deadlines, not tied to specific days
+      </p>
     {/if}
   </div>
 
   <!-- Todo List -->
-  <TodoList bind:this="{todoListRef}" />
+  <TodoList bind:this={todoListRef} />
 </div>
