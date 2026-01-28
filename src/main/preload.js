@@ -1,6 +1,5 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-// Expose protected methods to the renderer process
 contextBridge.exposeInMainWorld("api", {
   todos: {
     getAll: () => ipcRenderer.invoke("todos:getAll"),
@@ -64,5 +63,19 @@ contextBridge.exposeInMainWorld("api", {
     setAutoLaunch: (enabled) =>
       ipcRenderer.invoke("app:setAutoLaunch", enabled),
     getVersion: () => ipcRenderer.invoke("app:getVersion"),
+    minimize: () => ipcRenderer.invoke("app:minimize"),
+    quit: () => ipcRenderer.invoke("app:quit"),
+    clearAllData: () => ipcRenderer.invoke("app:clearAllData"),
+    getPaths: () => ipcRenderer.invoke("app:getPaths"),
+  },
+
+  onNavigate: (callback) => {
+    ipcRenderer.on("navigate", (event, page, viewMode) => {
+      callback(page, viewMode);
+    });
+  },
+
+  removeNavigateListener: () => {
+    ipcRenderer.removeAllListeners("navigate");
   },
 });

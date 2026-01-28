@@ -206,4 +206,20 @@ export const appApi = {
   async getVersion() {
     return api.app.getVersion();
   },
+
+  async minimize() {
+    return api.app.minimize();
+  },
+
+  async quit() {
+    return api.app.quit();
+  },
+
+  async clearAllData() {
+    return api.app.clearAllData();
+  },
+
+  async getPaths() {
+    return api.app.getPaths();
+  },
 };
