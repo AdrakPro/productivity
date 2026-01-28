@@ -40,8 +40,19 @@ contextBridge.exposeInMainWorld("api", {
     openFile: (filePath) => ipcRenderer.invoke("files:openFile", filePath),
     selectDirectory: () => ipcRenderer.invoke("files:selectDirectory"),
     getWorkingDirectory: () => ipcRenderer.invoke("files:getWorkingDirectory"),
-    setWorkingDirectory: (path) =>
-      ipcRenderer.invoke("files:setWorkingDirectory", path),
+    setWorkingDirectory: (dirPath) =>
+      ipcRenderer.invoke("files:setWorkingDirectory", dirPath),
+    createFile: (parentPath, fileName) =>
+      ipcRenderer.invoke("files:createFile", parentPath, fileName),
+    createFolder: (parentPath, folderName) =>
+      ipcRenderer.invoke("files:createFolder", parentPath, folderName),
+    rename: (oldPath, newName) =>
+      ipcRenderer.invoke("files:rename", oldPath, newName),
+    deleteItem: (itemPath) => ipcRenderer.invoke("files:deleteItem", itemPath),
+    moveItem: (sourcePath, targetFolder) =>
+      ipcRenderer.invoke("files:moveItem", sourcePath, targetFolder),
+    copyItem: (sourcePath, targetFolder) =>
+      ipcRenderer.invoke("files:copyItem", sourcePath, targetFolder),
   },
 
   app: {

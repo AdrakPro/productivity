@@ -1,136 +1,523 @@
 <script>
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import {
-    ChevronDown,
     Folder,
-    FolderOpen,
     FolderPlus,
     RefreshCw,
-    X,
+    FilePlus,
+    Pencil,
+    Trash2,
   } from "lucide-svelte";
-  import {
-    clearWorkingDirectory,
-    expandedFolders,
-    fileTree,
-    isLoading,
-    loadWorkingDirectory,
-    refreshFileTree,
-    selectWorkingDirectory,
-    toggleFolder,
-    workingDirectory,
-  } from "$lib/stores/fileStore.js";
-  import FileTree from "./FileTree.svelte";
+  import { filesApi } from "$lib/services/api.js";
+  import FileTreeNode from "./FileTreeNode.svelte";
 
-  onMount(() => {
-    loadWorkingDirectory();
+  let fileTree = null;
+  let workingDirectory = null;
+  let isLoading = false;
+  let error = null;
+  let expandedFolders = new Set();
+
+  // Drag and drop state
+  let draggedItem = null;
+  let dragOverPath = null;
+  let rootDropTarget = false;
+
+  // Context menu state
+  let contextMenu = {
+    show: false,
+    x: 0,
+    y: 0,
+    target: null,
+    type: null,
+  };
+
+  // Dialog state
+  let dialog = {
+    show: false,
+    type: null,
+    targetPath: null,
+    targetName: null,
+    targetType: null,
+    inputValue: "",
+    error: null,
+  };
+
+  onMount(async () => {
+    await loadWorkingDirectory();
+    document.addEventListener("click", closeContextMenu);
   });
 
-  async function handleSelectDirectory() {
-    await selectWorkingDirectory();
+  onDestroy(() => {
+    document.removeEventListener("click", closeContextMenu);
+  });
+
+  async function loadWorkingDirectory() {
+    try {
+      workingDirectory = await filesApi.getWorkingDirectory();
+      if (workingDirectory) {
+        await refreshFileTree();
+      }
+    } catch (err) {
+      console.error("Failed to load working directory:", err);
+      error = err.message;
+    }
   }
 
-  async function handleRefresh() {
-    await refreshFileTree();
+  async function refreshFileTree() {
+    if (!workingDirectory) return;
+
+    isLoading = true;
+    error = null;
+
+    try {
+      fileTree = await filesApi.getTree(workingDirectory);
+    } catch (err) {
+      console.error("Failed to load file tree:", err);
+      error = err.message;
+    } finally {
+      isLoading = false;
+    }
   }
 
-  async function handleClear() {
-    await clearWorkingDirectory();
+  async function selectDirectory() {
+    try {
+      const selected = await filesApi.selectDirectory();
+      if (selected) {
+        workingDirectory = selected;
+        expandedFolders.clear();
+        await refreshFileTree();
+      }
+    } catch (err) {
+      console.error("Failed to select directory:", err);
+      error = err.message;
+    }
   }
 
-  function getFolderName(path) {
-    if (!path) return "";
-    const parts = path.split(/[/\\]/);
-    return parts[parts.length - 1] || path;
+  function toggleFolder(path) {
+    if (expandedFolders.has(path)) {
+      expandedFolders.delete(path);
+    } else {
+      expandedFolders.add(path);
+    }
+    expandedFolders = new Set(expandedFolders);
   }
 
-  $: isRootExpanded = $fileTree ? $expandedFolders.has($fileTree.path) : false;
+  async function openFile(filePath) {
+    try {
+      await filesApi.openFile(filePath);
+    } catch (err) {
+      console.error("Failed to open file:", err);
+    }
+  }
 
-  function toggleRoot() {
-    if ($fileTree) {
-      toggleFolder($fileTree.path);
+  // Drag and Drop Handlers
+  function handleDragStart(node) {
+    draggedItem = node;
+  }
+
+  function handleDragOver(path) {
+    // Don't allow dropping on itself or its children
+    if (draggedItem && draggedItem.path !== path && !path.startsWith(draggedItem.path + "/")) {
+      dragOverPath = path;
+    }
+  }
+
+  function handleDragLeave(path) {
+    if (dragOverPath === path) {
+      dragOverPath = null;
+    }
+  }
+
+  function handleRootDragOver(event) {
+    event.preventDefault();
+
+    // Don't allow if dragging item is already in root
+    if (draggedItem && workingDirectory) {
+      const itemParent = draggedItem.path.substring(0, draggedItem.path.lastIndexOf("/"));
+      if (itemParent !== workingDirectory) {
+        rootDropTarget = true;
+        event.dataTransfer.dropEffect = "move";
+      }
+    }
+  }
+
+  function handleRootDragLeave(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX;
+    const y = event.clientY;
+
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      rootDropTarget = false;
+    }
+  }
+
+  async function handleDrop(sourceData, targetPath) {
+    dragOverPath = null;
+    rootDropTarget = false;
+
+    if (!sourceData || !targetPath) return;
+
+    // Don't move to same location
+    const sourcePath = sourceData.path;
+    const sourceParent = sourcePath.substring(0, sourcePath.lastIndexOf("/"));
+
+    if (sourceParent === targetPath) {
+      console.log("Already in this folder");
+      return;
+    }
+
+    // Don't move folder into itself or its children
+    if (sourceData.isDirectory && targetPath.startsWith(sourcePath)) {
+      console.log("Cannot move folder into itself");
+      return;
+    }
+
+    try {
+      await filesApi.moveItem(sourcePath, targetPath);
+      await refreshFileTree();
+    } catch (err) {
+      console.error("Failed to move item:", err);
+      error = err.message;
+    }
+
+    draggedItem = null;
+  }
+
+  async function handleRootDrop(event) {
+    event.preventDefault();
+    rootDropTarget = false;
+
+    if (!draggedItem || !workingDirectory) return;
+
+    try {
+      const data = JSON.parse(event.dataTransfer.getData("text/plain"));
+      await handleDrop(data, workingDirectory);
+    } catch (err) {
+      console.error("Failed to handle root drop:", err);
+    }
+  }
+
+  // Context Menu
+  function handleContextMenu(event, node, type) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    contextMenu = {
+      show: true,
+      x: event.clientX,
+      y: event.clientY,
+      target: node,
+      type: type,
+    };
+  }
+
+  function handleRootContextMenu(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    contextMenu = {
+      show: true,
+      x: event.clientX,
+      y: event.clientY,
+      target: { path: workingDirectory, name: "" },
+      type: "root",
+    };
+  }
+
+  function closeContextMenu() {
+    if (contextMenu.show) {
+      contextMenu = { ...contextMenu, show: false };
+    }
+  }
+
+  // Dialog Functions
+  function openDialog(type) {
+    closeContextMenu();
+
+    dialog = {
+      show: true,
+      type: type,
+      targetPath: contextMenu.target.path,
+      targetName: contextMenu.target.name,
+      targetType: contextMenu.type,
+      inputValue: type === "rename" ? contextMenu.target.name : "",
+      error: null,
+    };
+  }
+
+  function closeDialog() {
+    dialog = { ...dialog, show: false };
+  }
+
+  async function handleDialogSubmit() {
+    dialog.error = null;
+
+    try {
+      switch (dialog.type) {
+        case "newFile":
+          if (!dialog.inputValue.trim()) {
+            dialog.error = "File name is required";
+            return;
+          }
+          await filesApi.createFile(dialog.targetPath, dialog.inputValue.trim());
+          break;
+
+        case "newFolder":
+          if (!dialog.inputValue.trim()) {
+            dialog.error = "Folder name is required";
+            return;
+          }
+          await filesApi.createFolder(dialog.targetPath, dialog.inputValue.trim());
+          break;
+
+        case "rename":
+          if (!dialog.inputValue.trim()) {
+            dialog.error = "Name is required";
+            return;
+          }
+          if (dialog.inputValue.trim() === dialog.targetName) {
+            closeDialog();
+            return;
+          }
+          await filesApi.rename(dialog.targetPath, dialog.inputValue.trim());
+          break;
+
+        case "delete":
+          await filesApi.deleteItem(dialog.targetPath);
+          break;
+      }
+
+      closeDialog();
+      await refreshFileTree();
+    } catch (err) {
+      console.error("Operation failed:", err);
+      dialog.error = err.message || "Operation failed";
+    }
+  }
+
+  function handleDialogKeydown(event) {
+    if (event.key === "Enter") {
+      handleDialogSubmit();
+    } else if (event.key === "Escape") {
+      closeDialog();
+    }
+  }
+
+  function getDialogTitle() {
+    switch (dialog.type) {
+      case "newFile":
+        return "Create New File";
+      case "newFolder":
+        return "Create New Folder";
+      case "rename":
+        return "Rename";
+      case "delete":
+        return "Delete";
+      default:
+        return "";
     }
   }
 </script>
 
-<div class="p-3 h-full flex flex-col">
-  <div class="flex items-center justify-between mb-3">
-    <h3 class="font-medium text-sm text-gray-400 flex items-center gap-2">
-      <Folder size="{16}" />
-      File Explorer
-    </h3>
-
-    {#if $workingDirectory}
-      <div class="flex items-center gap-1">
+<div class="h-full flex flex-col">
+  <!-- Header -->
+  <div class="flex items-center justify-between p-2 border-b border-surface-lighter">
+    <span class="text-xs font-medium text-gray-400 uppercase">Explorer</span>
+    <div class="flex items-center gap-1">
+      {#if workingDirectory}
         <button
+            class="p-1 rounded hover:bg-surface-lighter text-gray-500 hover:text-on-surface transition-colors"
+            on:click={refreshFileTree}
+            title="Refresh"
+        >
+          <RefreshCw size={14} />
+        </button>
+      {/if}
+      <button
           class="p-1 rounded hover:bg-surface-lighter text-gray-500 hover:text-on-surface transition-colors"
-          on:click="{handleRefresh}"
-          title="Refresh"
-          disabled="{$isLoading}"
-        >
-          <RefreshCw size="{14}" class="{$isLoading ? 'animate-spin' : ''}" />
-        </button>
-        <button
-          class="p-1 rounded hover:bg-surface-lighter text-gray-500 hover:text-error transition-colors"
-          on:click="{handleClear}"
-          title="Close folder"
-        >
-          <X size="{14}" />
-        </button>
-      </div>
-    {/if}
+          on:click={selectDirectory}
+          title="Select Folder"
+      >
+        <FolderPlus size={14} />
+      </button>
+    </div>
   </div>
 
   <!-- Content -->
-  {#if $workingDirectory}
-    <div class="flex-1 overflow-auto">
-      {#if $fileTree}
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div
+      class="flex-1 overflow-auto p-1 transition-colors
+      {rootDropTarget ? 'bg-primary/10 ring-2 ring-inset ring-primary' : ''}"
+      on:contextmenu={workingDirectory ? handleRootContextMenu : null}
+      on:dragover={workingDirectory ? handleRootDragOver : null}
+      on:dragleave={handleRootDragLeave}
+      on:drop={handleRootDrop}
+      role="tree"
+  >
+    {#if isLoading}
+      <div class="flex items-center justify-center py-8">
+        <RefreshCw size={20} class="animate-spin text-gray-500" />
+      </div>
+    {:else if error}
+      <div class="text-center py-4 px-2">
+        <p class="text-sm text-error">{error}</p>
         <button
-          class="w-full flex items-center gap-1 py-1 px-1 rounded hover:bg-surface-lighter text-sm text-left transition-colors group mb-1"
-          on:click="{toggleRoot}"
+            class="text-xs text-primary hover:underline mt-2"
+            on:click={refreshFileTree}
         >
-          <ChevronDown
-            size="{14}"
-            class="text-gray-500 flex-shrink-0 transition-transform {isRootExpanded
-              ? ''
-              : '-rotate-90'}"
-          />
-          {#if isRootExpanded}
-            <FolderOpen size="{16}" class="text-yellow-500 flex-shrink-0" />
-          {:else}
-            <Folder size="{16}" class="text-yellow-500 flex-shrink-0" />
-          {/if}
-          <span class="truncate text-on-surface font-medium"
-            >{getFolderName($workingDirectory)}</span
-          >
+          Try again
         </button>
-
-        <!-- Children (if expanded) -->
-        {#if isRootExpanded && $fileTree.children}
-          <div class="ml-2">
-            {#each $fileTree.children as child (child.path)}
-              <FileTree node="{child}" depth="{0}" />
-            {/each}
-          </div>
-        {/if}
-      {:else if $isLoading}
-        <div class="text-sm text-gray-500 text-center py-4">Loading...</div>
+      </div>
+    {:else if !workingDirectory}
+      <div class="text-center py-8 px-2">
+        <Folder size={32} class="mx-auto text-gray-600 mb-2" />
+        <p class="text-sm text-gray-500 mb-3">No folder selected</p>
+        <button class="btn btn-primary btn-sm" on:click={selectDirectory}>
+          Select Folder
+        </button>
+      </div>
+    {:else if fileTree && fileTree.children}
+      {#if fileTree.children.length === 0}
+        <div class="text-center py-4">
+          <p class="text-sm text-gray-500">Empty folder</p>
+          <p class="text-xs text-gray-600 mt-1">Right-click to create files</p>
+        </div>
       {:else}
-        <div class="text-sm text-gray-500 text-center py-4">No files found</div>
+        {#each fileTree.children as node (node.path)}
+          <FileTreeNode
+              {node}
+              {expandedFolders}
+              onToggleFolder={toggleFolder}
+              onOpenFile={openFile}
+              onContextMenu={handleContextMenu}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              {dragOverPath}
+          />
+        {/each}
       {/if}
-    </div>
-  {:else}
-    <!-- No folder selected -->
-    <div class="flex-1 flex flex-col items-center justify-center text-center">
-      <FolderOpen size="{32}" class="text-gray-600 mb-3" />
-      <p class="text-sm text-gray-500 mb-3">No folder selected</p>
-      <button
-        class="btn btn-ghost text-sm flex items-center gap-2"
-        on:click="{handleSelectDirectory}"
-        disabled="{$isLoading}"
-      >
-        <FolderPlus size="{16}" />
-        Open Folder
-      </button>
-    </div>
-  {/if}
+    {/if}
+  </div>
 </div>
+
+<!-- Context Menu -->
+{#if contextMenu.show}
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div
+      class="fixed bg-surface-light border border-surface-lighter rounded-lg shadow-xl py-1 z-50 min-w-[160px]"
+      style="left: {contextMenu.x}px; top: {contextMenu.y}px;"
+      on:click|stopPropagation
+      role="menu"
+  >
+    {#if contextMenu.type === "root" || contextMenu.type === "folder"}
+      <button
+          class="w-full px-3 py-1.5 text-sm text-left hover:bg-surface-lighter flex items-center gap-2"
+          on:click={() => openDialog("newFile")}
+          role="menuitem"
+      >
+        <FilePlus size={14} />
+        New File
+      </button>
+      <button
+          class="w-full px-3 py-1.5 text-sm text-left hover:bg-surface-lighter flex items-center gap-2"
+          on:click={() => openDialog("newFolder")}
+          role="menuitem"
+      >
+        <FolderPlus size={14} />
+        New Folder
+      </button>
+    {/if}
+
+    {#if contextMenu.type !== "root"}
+      {#if contextMenu.type === "folder"}
+        <div class="border-t border-surface-lighter my-1"></div>
+      {/if}
+      <button
+          class="w-full px-3 py-1.5 text-sm text-left hover:bg-surface-lighter flex items-center gap-2"
+          on:click={() => openDialog("rename")}
+          role="menuitem"
+      >
+        <Pencil size={14} />
+        Rename
+      </button>
+      <button
+          class="w-full px-3 py-1.5 text-sm text-left hover:bg-surface-lighter flex items-center gap-2 text-error"
+          on:click={() => openDialog("delete")}
+          role="menuitem"
+      >
+        <Trash2 size={14} />
+        Delete
+      </button>
+    {/if}
+  </div>
+{/if}
+
+<!-- Dialog Modal -->
+{#if dialog.show}
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      on:click={closeDialog}
+      on:keydown={(e) => e.key === "Escape" && closeDialog()}
+      role="dialog"
+      tabindex="-1"
+  >
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <div
+        class="bg-surface-light rounded-lg shadow-xl p-4 w-80 max-w-[90vw]"
+        on:click|stopPropagation
+    >
+      <h3 class="text-lg font-medium mb-4">{getDialogTitle()}</h3>
+
+      {#if dialog.type === "delete"}
+        <p class="text-sm text-gray-400 mb-4">
+          Are you sure you want to delete
+          <span class="text-on-surface font-medium">"{dialog.targetName}"</span>?
+          {#if dialog.targetType === "folder"}
+            <br /><span class="text-error"
+          >This will delete all contents inside.</span
+          >
+          {/if}
+        </p>
+      {:else}
+        <input
+            type="text"
+            class="input w-full"
+            placeholder={dialog.type === "newFile"
+            ? "filename.txt"
+            : dialog.type === "newFolder"
+              ? "folder name"
+              : "new name"}
+            bind:value={dialog.inputValue}
+            on:keydown={handleDialogKeydown}
+            autofocus
+        />
+      {/if}
+
+      {#if dialog.error}
+        <p class="text-sm text-error mt-2">{dialog.error}</p>
+      {/if}
+
+      <div class="flex justify-end gap-2 mt-4">
+        <button class="btn btn-ghost" on:click={closeDialog}> Cancel </button>
+        <button
+            class="btn {dialog.type === 'delete'
+            ? 'bg-error hover:bg-error/80 text-white'
+            : 'btn-primary'}"
+            on:click={handleDialogSubmit}
+        >
+          {dialog.type === "delete" ? "Delete" : "Confirm"}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<style>
+  .btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+</style>

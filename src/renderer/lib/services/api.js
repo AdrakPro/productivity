@@ -156,8 +156,32 @@ export const filesApi = {
     return api.files.getWorkingDirectory();
   },
 
-  async setWorkingDirectory(path) {
-    return api.files.setWorkingDirectory(path);
+  async setWorkingDirectory(dirPath) {
+    return api.files.setWorkingDirectory(dirPath);
+  },
+
+  async createFile(parentPath, fileName) {
+    return api.files.createFile(parentPath, fileName);
+  },
+
+  async createFolder(parentPath, folderName) {
+    return api.files.createFolder(parentPath, folderName);
+  },
+
+  async rename(oldPath, newName) {
+    return api.files.rename(oldPath, newName);
+  },
+
+  async deleteItem(itemPath) {
+    return api.files.deleteItem(itemPath);
+  },
+
+  async moveItem(sourcePath, targetFolder) {
+    return api.files.moveItem(sourcePath, targetFolder);
+  },
+
+  async copyItem(sourcePath, targetFolder) {
+    return api.files.copyItem(sourcePath, targetFolder);
   },
 };
 

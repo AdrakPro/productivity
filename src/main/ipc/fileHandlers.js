@@ -6,12 +6,12 @@ const path = require("path");
  * Register file-related IPC handlers
  */
 function registerFileHandlers(settingsRepo) {
+  // Get file tree
   ipcMain.handle("files:getTree", async (event, rootPath) => {
     try {
       if (!rootPath || !fs.existsSync(rootPath)) {
         return null;
       }
-
       return buildFileTree(rootPath);
     } catch (error) {
       console.error("Error getting file tree:", error);
@@ -19,6 +19,7 @@ function registerFileHandlers(settingsRepo) {
     }
   });
 
+  // Open file with system default application
   ipcMain.handle("files:openFile", async (event, filePath) => {
     try {
       const result = await shell.openPath(filePath);
@@ -32,6 +33,7 @@ function registerFileHandlers(settingsRepo) {
     }
   });
 
+  // Select directory dialog
   ipcMain.handle("files:selectDirectory", async () => {
     try {
       const result = await dialog.showOpenDialog({
@@ -52,6 +54,7 @@ function registerFileHandlers(settingsRepo) {
     }
   });
 
+  // Get working directory
   ipcMain.handle("files:getWorkingDirectory", async () => {
     try {
       return settingsRepo.get("workingDirectory", null);
@@ -61,6 +64,7 @@ function registerFileHandlers(settingsRepo) {
     }
   });
 
+  // Set working directory
   ipcMain.handle("files:setWorkingDirectory", async (event, dirPath) => {
     try {
       settingsRepo.set("workingDirectory", dirPath);
@@ -70,20 +74,188 @@ function registerFileHandlers(settingsRepo) {
       throw error;
     }
   });
+
+  // Create new file
+  ipcMain.handle("files:createFile", async (event, parentPath, fileName) => {
+    try {
+      const filePath = path.join(parentPath, fileName);
+
+      if (fs.existsSync(filePath)) {
+        throw new Error("File already exists");
+      }
+
+      fs.writeFileSync(filePath, "");
+      return true;
+    } catch (error) {
+      console.error("Error creating file:", error);
+      throw error;
+    }
+  });
+
+  // Create new folder
+  ipcMain.handle("files:createFolder", async (event, parentPath, folderName) => {
+    try {
+      const folderPath = path.join(parentPath, folderName);
+
+      if (fs.existsSync(folderPath)) {
+        throw new Error("Folder already exists");
+      }
+
+      fs.mkdirSync(folderPath, { recursive: true });
+      return true;
+    } catch (error) {
+      console.error("Error creating folder:", error);
+      throw error;
+    }
+  });
+
+  // Rename file or folder
+  ipcMain.handle("files:rename", async (event, oldPath, newName) => {
+    try {
+      const parentDir = path.dirname(oldPath);
+      const newPath = path.join(parentDir, newName);
+
+      if (fs.existsSync(newPath)) {
+        throw new Error("A file or folder with this name already exists");
+      }
+
+      fs.renameSync(oldPath, newPath);
+      return true;
+    } catch (error) {
+      console.error("Error renaming:", error);
+      throw error;
+    }
+  });
+
+  // Delete file or folder
+  ipcMain.handle("files:deleteItem", async (event, itemPath) => {
+    try {
+      const stats = fs.statSync(itemPath);
+
+      if (stats.isDirectory()) {
+        fs.rmSync(itemPath, { recursive: true, force: true });
+      } else {
+        fs.unlinkSync(itemPath);
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error deleting:", error);
+      throw error;
+    }
+  });
+
+  // Move file or folder
+  ipcMain.handle("files:moveItem", async (event, sourcePath, targetFolder) => {
+    try {
+      const itemName = path.basename(sourcePath);
+      const destPath = path.join(targetFolder, itemName);
+
+      // Check if source exists
+      if (!fs.existsSync(sourcePath)) {
+        throw new Error("Source file or folder does not exist");
+      }
+
+      // Check if destination already has an item with the same name
+      if (fs.existsSync(destPath)) {
+        throw new Error(`"${itemName}" already exists in the destination folder`);
+      }
+
+      // Check if trying to move a folder into itself
+      if (targetFolder.startsWith(sourcePath + path.sep)) {
+        throw new Error("Cannot move a folder into itself");
+      }
+
+      // Check if source and destination are the same
+      if (sourcePath === destPath) {
+        throw new Error("Source and destination are the same");
+      }
+
+      // Move the file/folder
+      fs.renameSync(sourcePath, destPath);
+
+      return { success: true, newPath: destPath };
+    } catch (error) {
+      console.error("Error moving item:", error);
+      throw error;
+    }
+  });
+
+  // Copy file or folder
+  ipcMain.handle("files:copyItem", async (event, sourcePath, targetFolder) => {
+    try {
+      const itemName = path.basename(sourcePath);
+      let destPath = path.join(targetFolder, itemName);
+
+      // Check if source exists
+      if (!fs.existsSync(sourcePath)) {
+        throw new Error("Source file or folder does not exist");
+      }
+
+      // If destination exists, add a suffix
+      if (fs.existsSync(destPath)) {
+        const ext = path.extname(itemName);
+        const baseName = path.basename(itemName, ext);
+        let counter = 1;
+
+        while (fs.existsSync(destPath)) {
+          destPath = path.join(targetFolder, `${baseName} (${counter})${ext}`);
+          counter++;
+        }
+      }
+
+      const stats = fs.statSync(sourcePath);
+
+      if (stats.isDirectory()) {
+        copyFolderRecursive(sourcePath, destPath);
+      } else {
+        fs.copyFileSync(sourcePath, destPath);
+      }
+
+      return { success: true, newPath: destPath };
+    } catch (error) {
+      console.error("Error copying item:", error);
+      throw error;
+    }
+  });
+}
+
+/**
+ * Copy folder recursively
+ */
+function copyFolderRecursive(source, destination) {
+  // Create destination folder
+  fs.mkdirSync(destination, { recursive: true });
+
+  // Read source directory
+  const items = fs.readdirSync(source);
+
+  for (const item of items) {
+    const sourcePath = path.join(source, item);
+    const destPath = path.join(destination, item);
+    const stats = fs.statSync(sourcePath);
+
+    if (stats.isDirectory()) {
+      copyFolderRecursive(sourcePath, destPath);
+    } else {
+      fs.copyFileSync(sourcePath, destPath);
+    }
+  }
 }
 
 /**
  * Build a file tree structure from a directory
  */
-function buildFileTree(dirPath, depth = 0, maxDepth = 5) {
+function buildFileTree(dirPath, depth = 0, maxDepth = 10) {
   if (depth > maxDepth) return null;
 
   const stats = fs.statSync(dirPath);
   const name = path.basename(dirPath);
 
+  // Skip hidden files and common ignored directories
   if (
     name.startsWith(".") ||
-    ["node_modules", "dist", "build", "__pycache__"].includes(name)
+    ["node_modules", "dist", "build", "__pycache__", ".git", ".svn"].includes(name)
   ) {
     return null;
   }
@@ -96,10 +268,10 @@ function buildFileTree(dirPath, depth = 0, maxDepth = 5) {
 
   if (stats.isDirectory()) {
     try {
-      node.children = fs
+      const children = fs
         .readdirSync(dirPath)
         .map((child) =>
-          buildFileTree(path.join(dirPath, child), depth + 1, maxDepth),
+          buildFileTree(path.join(dirPath, child), depth + 1, maxDepth)
         )
         .filter(Boolean)
         .sort((a, b) => {
@@ -107,6 +279,8 @@ function buildFileTree(dirPath, depth = 0, maxDepth = 5) {
           if (!a.isDirectory && b.isDirectory) return 1;
           return a.name.localeCompare(b.name);
         });
+
+      node.children = children;
     } catch (error) {
       node.children = [];
     }
