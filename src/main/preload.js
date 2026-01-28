@@ -38,6 +38,10 @@ contextBridge.exposeInMainWorld("api", {
   files: {
     getTree: (rootPath) => ipcRenderer.invoke("files:getTree", rootPath),
     openFile: (filePath) => ipcRenderer.invoke("files:openFile", filePath),
+    openInFileManager: (folderPath) =>
+      ipcRenderer.invoke("files:openInFileManager", folderPath),
+    showInFileManager: (itemPath) =>
+      ipcRenderer.invoke("files:showInFileManager", itemPath),
     selectDirectory: () => ipcRenderer.invoke("files:selectDirectory"),
     getWorkingDirectory: () => ipcRenderer.invoke("files:getWorkingDirectory"),
     setWorkingDirectory: (dirPath) =>

@@ -33,6 +33,33 @@ function registerFileHandlers(settingsRepo) {
     }
   });
 
+  // Open folder in system file manager
+  ipcMain.handle("files:openInFileManager", async (event, folderPath) => {
+    try {
+      // shell.openPath opens the folder in the default file manager
+      const result = await shell.openPath(folderPath);
+      if (result) {
+        throw new Error(result);
+      }
+      return true;
+    } catch (error) {
+      console.error("Error opening in file manager:", error);
+      throw error;
+    }
+  });
+
+  // Show item in file manager (highlights the file/folder)
+  ipcMain.handle("files:showInFileManager", async (event, itemPath) => {
+    try {
+      // shell.showItemInFolder opens the parent folder and selects/highlights the item
+      shell.showItemInFolder(itemPath);
+      return true;
+    } catch (error) {
+      console.error("Error showing in file manager:", error);
+      throw error;
+    }
+  });
+
   // Select directory dialog
   ipcMain.handle("files:selectDirectory", async () => {
     try {
@@ -151,27 +178,22 @@ function registerFileHandlers(settingsRepo) {
       const itemName = path.basename(sourcePath);
       const destPath = path.join(targetFolder, itemName);
 
-      // Check if source exists
       if (!fs.existsSync(sourcePath)) {
         throw new Error("Source file or folder does not exist");
       }
 
-      // Check if destination already has an item with the same name
       if (fs.existsSync(destPath)) {
         throw new Error(`"${itemName}" already exists in the destination folder`);
       }
 
-      // Check if trying to move a folder into itself
       if (targetFolder.startsWith(sourcePath + path.sep)) {
         throw new Error("Cannot move a folder into itself");
       }
 
-      // Check if source and destination are the same
       if (sourcePath === destPath) {
         throw new Error("Source and destination are the same");
       }
 
-      // Move the file/folder
       fs.renameSync(sourcePath, destPath);
 
       return { success: true, newPath: destPath };
@@ -187,12 +209,10 @@ function registerFileHandlers(settingsRepo) {
       const itemName = path.basename(sourcePath);
       let destPath = path.join(targetFolder, itemName);
 
-      // Check if source exists
       if (!fs.existsSync(sourcePath)) {
         throw new Error("Source file or folder does not exist");
       }
 
-      // If destination exists, add a suffix
       if (fs.existsSync(destPath)) {
         const ext = path.extname(itemName);
         const baseName = path.basename(itemName, ext);
@@ -224,10 +244,8 @@ function registerFileHandlers(settingsRepo) {
  * Copy folder recursively
  */
 function copyFolderRecursive(source, destination) {
-  // Create destination folder
   fs.mkdirSync(destination, { recursive: true });
 
-  // Read source directory
   const items = fs.readdirSync(source);
 
   for (const item of items) {
@@ -252,7 +270,6 @@ function buildFileTree(dirPath, depth = 0, maxDepth = 10) {
   const stats = fs.statSync(dirPath);
   const name = path.basename(dirPath);
 
-  // Skip hidden files and common ignored directories
   if (
     name.startsWith(".") ||
     ["node_modules", "dist", "build", "__pycache__", ".git", ".svn"].includes(name)

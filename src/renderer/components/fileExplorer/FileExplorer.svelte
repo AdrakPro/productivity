@@ -7,6 +7,8 @@
     FilePlus,
     Pencil,
     Trash2,
+    ExternalLink,
+    FolderOpen,
   } from "lucide-svelte";
   import { filesApi } from "$lib/services/api.js";
   import FileTreeNode from "./FileTreeNode.svelte";
@@ -93,6 +95,26 @@
     }
   }
 
+  async function openInSystemFileManager() {
+    if (!workingDirectory) return;
+
+    try {
+      await filesApi.openInFileManager(workingDirectory);
+    } catch (err) {
+      console.error("Failed to open in file manager:", err);
+      error = err.message;
+    }
+  }
+
+  async function showItemInSystemFileManager(itemPath) {
+    try {
+      await filesApi.showInFileManager(itemPath);
+    } catch (err) {
+      console.error("Failed to show in file manager:", err);
+      error = err.message;
+    }
+  }
+
   function toggleFolder(path) {
     if (expandedFolders.has(path)) {
       expandedFolders.delete(path);
@@ -116,8 +138,11 @@
   }
 
   function handleDragOver(path) {
-    // Don't allow dropping on itself or its children
-    if (draggedItem && draggedItem.path !== path && !path.startsWith(draggedItem.path + "/")) {
+    if (
+        draggedItem &&
+        draggedItem.path !== path &&
+        !path.startsWith(draggedItem.path + "/")
+    ) {
       dragOverPath = path;
     }
   }
@@ -131,9 +156,11 @@
   function handleRootDragOver(event) {
     event.preventDefault();
 
-    // Don't allow if dragging item is already in root
     if (draggedItem && workingDirectory) {
-      const itemParent = draggedItem.path.substring(0, draggedItem.path.lastIndexOf("/"));
+      const itemParent = draggedItem.path.substring(
+          0,
+          draggedItem.path.lastIndexOf("/")
+      );
       if (itemParent !== workingDirectory) {
         rootDropTarget = true;
         event.dataTransfer.dropEffect = "move";
@@ -157,18 +184,14 @@
 
     if (!sourceData || !targetPath) return;
 
-    // Don't move to same location
     const sourcePath = sourceData.path;
     const sourceParent = sourcePath.substring(0, sourcePath.lastIndexOf("/"));
 
     if (sourceParent === targetPath) {
-      console.log("Already in this folder");
       return;
     }
 
-    // Don't move folder into itself or its children
     if (sourceData.isDirectory && targetPath.startsWith(sourcePath)) {
-      console.log("Cannot move folder into itself");
       return;
     }
 
@@ -230,6 +253,19 @@
     }
   }
 
+  function handleOpenInFileManager() {
+    closeContextMenu();
+
+    if (contextMenu.type === "root") {
+      openInSystemFileManager();
+    } else if (contextMenu.type === "folder") {
+      filesApi.openInFileManager(contextMenu.target.path);
+    } else {
+      // For files, show them in the file manager (highlights the file)
+      showItemInSystemFileManager(contextMenu.target.path);
+    }
+  }
+
   // Dialog Functions
   function openDialog(type) {
     closeContextMenu();
@@ -267,7 +303,10 @@
             dialog.error = "Folder name is required";
             return;
           }
-          await filesApi.createFolder(dialog.targetPath, dialog.inputValue.trim());
+          await filesApi.createFolder(
+              dialog.targetPath,
+              dialog.inputValue.trim()
+          );
           break;
 
         case "rename":
@@ -321,10 +360,19 @@
 
 <div class="h-full flex flex-col">
   <!-- Header -->
-  <div class="flex items-center justify-between p-2 border-b border-surface-lighter">
+  <div
+      class="flex items-center justify-between p-2 border-b border-surface-lighter"
+  >
     <span class="text-xs font-medium text-gray-400 uppercase">Explorer</span>
     <div class="flex items-center gap-1">
       {#if workingDirectory}
+        <button
+            class="p-1 rounded hover:bg-surface-lighter text-gray-500 hover:text-on-surface transition-colors"
+            on:click={openInSystemFileManager}
+            title="Open in File Manager"
+        >
+          <ExternalLink size={14} />
+        </button>
         <button
             class="p-1 rounded hover:bg-surface-lighter text-gray-500 hover:text-on-surface transition-colors"
             on:click={refreshFileTree}
@@ -344,10 +392,9 @@
   </div>
 
   <!-- Content -->
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div
-      class="flex-1 overflow-auto p-1 transition-colors
-      {rootDropTarget ? 'bg-primary/10 ring-2 ring-inset ring-primary' : ''}"
+      class="explorer-content flex-1 overflow-auto p-1"
+      class:root-drop-target={rootDropTarget}
       on:contextmenu={workingDirectory ? handleRootContextMenu : null}
       on:dragover={workingDirectory ? handleRootDragOver : null}
       on:dragleave={handleRootDragLeave}
@@ -404,14 +451,28 @@
 
 <!-- Context Menu -->
 {#if contextMenu.show}
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div
-      class="fixed bg-surface-light border border-surface-lighter rounded-lg shadow-xl py-1 z-50 min-w-[160px]"
+      class="fixed bg-surface-light border border-surface-lighter rounded-lg shadow-xl py-1 z-50 min-w-[180px]"
       style="left: {contextMenu.x}px; top: {contextMenu.y}px;"
       on:click|stopPropagation
       role="menu"
   >
+    <!-- Open in File Manager - Always available -->
+    <button
+        class="w-full px-3 py-1.5 text-sm text-left hover:bg-surface-lighter flex items-center gap-2"
+        on:click={handleOpenInFileManager}
+        role="menuitem"
+    >
+      <ExternalLink size={14} />
+      {#if contextMenu.type === "file"}
+        Show in File Manager
+      {:else}
+        Open in File Manager
+      {/if}
+    </button>
+
     {#if contextMenu.type === "root" || contextMenu.type === "folder"}
+      <div class="border-t border-surface-lighter my-1"></div>
       <button
           class="w-full px-3 py-1.5 text-sm text-left hover:bg-surface-lighter flex items-center gap-2"
           on:click={() => openDialog("newFile")}
@@ -431,9 +492,7 @@
     {/if}
 
     {#if contextMenu.type !== "root"}
-      {#if contextMenu.type === "folder"}
-        <div class="border-t border-surface-lighter my-1"></div>
-      {/if}
+      <div class="border-t border-surface-lighter my-1"></div>
       <button
           class="w-full px-3 py-1.5 text-sm text-left hover:bg-surface-lighter flex items-center gap-2"
           on:click={() => openDialog("rename")}
@@ -456,7 +515,6 @@
 
 <!-- Dialog Modal -->
 {#if dialog.show}
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       on:click={closeDialog}
@@ -464,7 +522,6 @@
       role="dialog"
       tabindex="-1"
   >
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div
         class="bg-surface-light rounded-lg shadow-xl p-4 w-80 max-w-[90vw]"
         on:click|stopPropagation
@@ -476,9 +533,9 @@
           Are you sure you want to delete
           <span class="text-on-surface font-medium">"{dialog.targetName}"</span>?
           {#if dialog.targetType === "folder"}
-            <br /><span class="text-error"
-          >This will delete all contents inside.</span
-          >
+            <br /><span class="text-error">
+              This will delete all contents inside.
+            </span>
           {/if}
         </p>
       {:else}
@@ -519,5 +576,14 @@
   .btn-sm {
     padding: 0.375rem 0.75rem;
     font-size: 0.875rem;
+  }
+
+  .explorer-content {
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .explorer-content.root-drop-target {
+    background-color: rgba(187, 134, 252, 0.08);
+    box-shadow: inset 0 0 0 2px rgb(187, 134, 252);
   }
 </style>

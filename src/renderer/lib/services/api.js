@@ -148,6 +148,14 @@ export const filesApi = {
     return api.files.openFile(filePath);
   },
 
+  async openInFileManager(folderPath) {
+    return api.files.openInFileManager(folderPath);
+  },
+
+  async showInFileManager(itemPath) {
+    return api.files.showInFileManager(itemPath);
+  },
+
   async selectDirectory() {
     return api.files.selectDirectory();
   },
